@@ -1,24 +1,33 @@
+from __future__ import annotations
+
+from pathlib import Path
+
 import PyInstaller.__main__
-import customtkinter
-import os
+from PySide6.QtWidgets import QApplication
 
-# Get customtkinter path to include data files (json, fonts, etc.)
-ctk_path = os.path.dirname(customtkinter.__file__)
-print(f"CustomTkinter path: {ctk_path}")
+from voice_typing_pro.widgets import create_app_icon
 
-# Build command arguments
-args = [
-    'main.py',                  # Main script
-    '--name=VoiceTypingPro',    # Name of the exe
-    '--onefile',                # Single exe file
-    '--noconsole',              # No black console window
-    '--windowed',               # Windowed mode
-    f'--add-data={ctk_path};customtkinter', # Include CTK assets
-    '--add-data=fb_icon.png;.',             # Include FB Icon (source;dest)
-    '--clean',                  # Clean cache
-    '--icon=NONE'               # No app icon
-]
 
-print("Starting build process...")
-PyInstaller.__main__.run(args)
-print("Build finished!")
+if __name__ == "__main__":
+    application = QApplication.instance() or QApplication([])
+    icon_dir = Path("build_assets")
+    icon_dir.mkdir(exist_ok=True)
+    icon_path = icon_dir / "app_icon.png"
+    if not create_app_icon(256).pixmap(256, 256).save(str(icon_path)):
+        raise RuntimeError("Could not generate the application icon")
+    PyInstaller.__main__.run(
+        [
+            "main.py",
+            "--name=BanglaVoiceTypingPro",
+            "--onefile",
+            "--windowed",
+            "--clean",
+            "--noconfirm",
+            f"--icon={icon_path}",
+            "--collect-all=speech_recognition",
+            "--collect-all=faster_whisper",
+            "--add-data=voice_typing_pro/locales;voice_typing_pro/locales",
+            "--add-data=voice_typing_pro/assets;voice_typing_pro/assets",
+            "--exclude-module=customtkinter",
+        ]
+    )
